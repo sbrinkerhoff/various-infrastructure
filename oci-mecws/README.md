@@ -3,7 +3,7 @@
 Infrastructure as Code (Terraform) and operational documentation for the **sbpersonalcloud** Oracle Cloud Infrastructure (OCI) tenancy in home region `us-ashburn-1` (IAD).
 
 This environment hosts:
-1. **`oci-ashburn01`**: An Always-Free AMD micro instance (`VM.Standard.E2.1.Micro`) running the **MECWS Volunteer Operations** application and acting as a **Tailscale Exit Node**.
+1. **`oci-mecws-prod01`**: An Always-Free AMD micro instance (`VM.Standard.E2.1.Micro`) running the **MECWS Volunteer Operations** application and acting as a **Tailscale Exit Node**.
 2. **`sbcloud-a1`**: An Always-Free ARM Ampere instance (`VM.Standard.A1.Flex`) pending host capacity allocation via an automated retry daemon.
 
 ---
@@ -27,12 +27,12 @@ flowchart TD
 
     subgraph Cloudflare["Cloudflare Edge Network"]
         CFEdge["Cloudflare Edge Proxy (ops.mecws.org)"]
-        CFTunnel["Cloudflare Tunnel (oci-ashburn01)"]
+        CFTunnel["Cloudflare Tunnel (oci-mecws-prod01)"]
     end
 
     subgraph OCI["Oracle Cloud Infrastructure (us-ashburn-1)"]
         subgraph VCN["sbcloud-vcn (10.0.0.0/16) - Zero Inbound Open Ports"]
-            subgraph VM["oci-ashburn01 (VM.Standard.E2.1.Micro)"]
+            subgraph VM["oci-mecws-prod01 (VM.Standard.E2.1.Micro)"]
                 TSDaemon["Tailscale Daemon (100.77.132.0 - Exit Node)"]
                 SSHService["Host SSH Daemon (Port 22 on Tailscale only)"]
                 
@@ -66,15 +66,15 @@ flowchart TD
 
 ### 1. Tailscale Mesh Network
 
-- **Node Name**: `oci-ashburn01`
+- **Node Name**: `oci-mecws-prod01`
 - **Tailscale IP**: `100.77.132.0`
-- **Tailnet Domain**: `oci-ashburn01.tail657922.ts.net`
+- **Tailnet Domain**: `oci-mecws-prod01.tail657922.ts.net`
 - **Role**: Secure administrative gateway and exit node.
 
 #### Zero Inbound Public SSH Exposure
 The OCI Network Security Group (NSG) `public-ssh` has `public_ssh_micro = false` in Terraform. As a result, the public IP (`157.151.220.214`) completely drops inbound packets on port 22. SSH is accessible strictly via Tailscale:
 ```bash
-ssh ubuntu@oci-ashburn01
+ssh ubuntu@oci-mecws-prod01
 # or
 ssh ubuntu@100.77.132.0
 ```
@@ -95,7 +95,7 @@ The instance is configured to route traffic for other Tailscale nodes:
 
 - **Cloudflare Account**: `Stan@vtwireless.com's Account` (`3a4b5b0c002caa3e5030c4ff17d604de`)
 - **Zone**: `mecws.org` (`f6a18a2f5278a26a1d01d740eac413f7`)
-- **Tunnel Name**: `oci-ashburn01`
+- **Tunnel Name**: `oci-ashburn01` (Cloudflare-side name from before the VM was renamed to `oci-mecws-prod01`; runs on `oci-mecws-prod01`)
 - **Tunnel ID**: `267777ad-ece1-45f9-984a-0c1222aca2cf`
 - **Public Hostname**: `https://ops.mecws.org`
 - **Local Ingress Target**: `http://localhost:5000`
@@ -103,12 +103,12 @@ The instance is configured to route traffic for other Tailscale nodes:
 #### How Traffic Traverses the Tunnel
 1. A user navigates to `https://ops.mecws.org`.
 2. Cloudflare DNS returns a CNAME pointing to `267777ad-ece1-45f9-984a-0c1222aca2cf.cfargotunnel.com`.
-3. Cloudflare edge nodes terminate the TLS session, handle DDoS mitigation, and forward requests over an active **outbound tunnel connection** established by the `cloudflared` container on `oci-ashburn01`.
+3. Cloudflare edge nodes terminate the TLS session, handle DDoS mitigation, and forward requests over an active **outbound tunnel connection** established by the `cloudflared` container on `oci-mecws-prod01`.
 4. Inside the VM, `cloudflared` proxies the HTTP request locally to port 5000 (`mecws-ops-web-1`).
 5. **No inbound ports (80 or 443) need to be open on the OCI firewall or router.**
 
 #### Container Definition
-The tunnel runs continuously as a Docker service on `oci-ashburn01`:
+The tunnel runs continuously as a Docker service on `oci-mecws-prod01`:
 ```bash
 docker run -d --name cloudflared --restart unless-stopped \
   cloudflare/cloudflared:latest tunnel --no-autoupdate run \
@@ -119,7 +119,7 @@ docker run -d --name cloudflared --restart unless-stopped \
 
 ### 3. MECWS Volunteer Operations Console
 
-- **Deployment Directory**: `/home/ubuntu/mecws-ops` on `oci-ashburn01`
+- **Deployment Directory**: `/home/ubuntu/mecws-ops` on `oci-mecws-prod01`
 - **Upstream Repository**: [sbrinkerhoff/MECWS-Volunteer-Operations](file:///Users/stanbrinkerhoff/git/MECWS-Volunteer-Operations)
 - **Container**: `mecws-ops-web-1` (running Python 3.13, Flask 3.1.2, Gunicorn 26.2.0 with `gthread` workers)
 - **Port**: Bound to host `127.0.0.1:5000` / `0.0.0.0:5000`
@@ -133,7 +133,7 @@ docker run -d --name cloudflared --restart unless-stopped \
   cd ~/git/MECWS-Volunteer-Operations
   ./deploy.sh
   ```
-  `deploy.sh` connects to `ubuntu@oci-ashburn01`, rsyncs application code, preserves `instance/mecws.db`, rebuilds the Docker image, runs database migrations, and boots Gunicorn.
+  `deploy.sh` connects to `ubuntu@oci-mecws-prod01`, rsyncs application code, preserves `instance/mecws.db`, rebuilds the Docker image, runs database migrations, and boots Gunicorn.
 
 ---
 
@@ -142,10 +142,10 @@ docker run -d --name cloudflared --restart unless-stopped \
 | Traffic Type | Source | Destination | Protocol / Port | Enforcement Layer | Status |
 |---|---|---|---|---|---|
 | **Public Web Ingress** | Any (`0.0.0.0/0`) | Cloudflare Edge (`ops.mecws.org`) | HTTPS (443) | Cloudflare Edge | Enabled (Proxied) |
-| **Tunnel Connection** | `oci-ashburn01` | Cloudflare Edge | Outbound HTTPS/QUIC (443 / 7844) | OCI Egress Security List | Outbound Only |
+| **Tunnel Connection** | `oci-mecws-prod01` | Cloudflare Edge | Outbound HTTPS/QUIC (443 / 7844) | OCI Egress Security List | Outbound Only |
 | **Public Direct Ingress** | Any (`0.0.0.0/0`) | `157.151.220.214` | Any | OCI Security List / NSG | **BLOCKED** |
 | **Public SSH** | Any (`0.0.0.0/0`) | `157.151.220.214` | TCP 22 | OCI NSG `public-ssh` (`public_ssh_micro = false`) | **BLOCKED** |
-| **Mesh Administration** | Authorized Tailnet Nodes | `100.77.132.0` (`oci-ashburn01`) | TCP 22 (SSH) | Tailscale ACLs & WireGuard | **ALLOWED** |
+| **Mesh Administration** | Authorized Tailnet Nodes | `100.77.132.0` (`oci-mecws-prod01`) | TCP 22 (SSH) | Tailscale ACLs & WireGuard | **ALLOWED** |
 | **Exit Node Traffic** | Authorized Tailnet Nodes | `100.77.132.0` | Any (WireGuard) | Tailscale ACLs & Kernel IP Forwarding | **ALLOWED** |
 
 ---
@@ -167,6 +167,12 @@ oci-mecws/
     ├── retry-apply.sh       # Automated retry loop to claim scarce A1 Ampere instances
     ├── instance.auto.tfvars # Auto-generated upon successful A1 allocation
     └── .gitignore           # Ignores *.tfstate, .terraform/, and retry-apply.log
+└── oci-ashburn02/           # Second E2.1.Micro, separate Terraform state
+    ├── main.tf              # Instance only; looks up compartment, subnet and public-ssh NSG from terraform/
+    ├── variables.tf         # Name, boot volume, public_ssh toggle
+    ├── outputs.tf           # Public IP and SSH command
+    ├── versions.tf          # Same provider constraints as terraform/
+    └── .gitignore           # Ignores *.tfstate, .terraform/, *.tfplan
 ```
 
 ---
@@ -207,8 +213,12 @@ The Terraform configuration in `terraform/` manages:
   - Security List: Permits all egress and ICMP fragmentation-needed (path MTU discovery)
   - NSG `public-ssh`: Port 22 toggleable per instance
 - **Instances**:
-  - `oci-ashburn01`: `VM.Standard.E2.1.Micro` (1/8 OCPU, 1 GB RAM, Ubuntu 24.04 Minimal x86_64).
+  - `oci-mecws-prod01`: `VM.Standard.E2.1.Micro` (1/8 OCPU, 1 GB RAM, Ubuntu 24.04 Minimal x86_64).
   - `sbcloud-a1`: `VM.Standard.A1.Flex` (Up to 4 OCPU / 24 GB RAM, Ubuntu 24.04 aarch64).
+
+`oci-ashburn02/` is a separate Terraform root with its own state. It owns only the `oci-ashburn02` instance (`VM.Standard.E2.1.Micro`, Ubuntu 24.04 Minimal, 50 GB boot, public IP `129.80.20.125`) and reads the compartment, subnet and `public-ssh` NSG from `terraform/` by name, so destroy `oci-ashburn02/` before `terraform/`. Its `public_ssh` toggle is `false`: SSH only via Tailscale (`ssh ubuntu@oci-ashburn02`, `100.116.22.120`).
+
+Manual setup on `oci-ashburn02` (same as `oci-mecws-prod01`, no workloads yet): 2 GB swap, packages fully upgraded, Docker Engine + Compose from `download.docker.com` (`ubuntu` in `docker` group), Tailscale joined via interactive login as `oci-ashburn02` with auto-update on, IP forwarding (`/etc/sysctl.d/99-tailscale.conf`) and `--advertise-exit-node` (approve in the admin console). Verified all of it survives a reboot. With both micros in use, the Always Free E2.1.Micro allowance (2) is full; boot volumes total 100 GB of the free 200 GB (150 GB if the A1 lands).
 
 ### Execution
 
@@ -220,7 +230,7 @@ terraform apply tfplan
 ```
 
 ### Emergency Public SSH Access
-If Tailscale goes offline and you need emergency access to `oci-ashburn01`:
+If Tailscale goes offline and you need emergency access to `oci-mecws-prod01`:
 1. Re-enable public SSH via Terraform:
    ```bash
    cd terraform
@@ -243,19 +253,19 @@ If Tailscale goes offline and you need emergency access to `oci-ashburn01`:
 
 ```bash
 # Check Tailscale status and connected mesh peers
-ssh ubuntu@oci-ashburn01 "tailscale status"
+ssh ubuntu@oci-mecws-prod01 "tailscale status"
 
 # Check Docker containers status
-ssh ubuntu@oci-ashburn01 "docker ps"
+ssh ubuntu@oci-mecws-prod01 "docker ps"
 
 # Stream live web application logs
-ssh ubuntu@oci-ashburn01 "docker logs -f --tail 100 mecws-ops-web-1"
+ssh ubuntu@oci-mecws-prod01 "docker logs -f --tail 100 mecws-ops-web-1"
 
 # Stream Cloudflare Tunnel logs
-ssh ubuntu@oci-ashburn01 "docker logs -f --tail 100 cloudflared"
+ssh ubuntu@oci-mecws-prod01 "docker logs -f --tail 100 cloudflared"
 
 # Check system memory and swap usage (critical on 1 GB micro instance)
-ssh ubuntu@oci-ashburn01 "free -h && vmstat 1 5"
+ssh ubuntu@oci-mecws-prod01 "free -h && vmstat 1 5"
 ```
 
 ### Database Backup & Maintenance
@@ -265,13 +275,13 @@ Because WAL mode is active, the database can be safely queried and backed up onl
 
 ```bash
 # Check journal mode and integrity
-ssh ubuntu@oci-ashburn01 "docker exec mecws-ops-web-1 python3 -c \"import sqlite3; con = sqlite3.connect('/app/instance/mecws.db'); print('journal_mode:', con.execute('PRAGMA journal_mode;').fetchone()[0])\""
+ssh ubuntu@oci-mecws-prod01 "docker exec mecws-ops-web-1 python3 -c \"import sqlite3; con = sqlite3.connect('/app/instance/mecws.db'); print('journal_mode:', con.execute('PRAGMA journal_mode;').fetchone()[0])\""
 
 # Create a hot online backup using SQLite backup API / VACUUM INTO
-ssh ubuntu@oci-ashburn01 "docker exec mecws-ops-web-1 python3 -c \"import sqlite3; con = sqlite3.connect('/app/instance/mecws.db'); con.execute('VACUUM INTO \\\"/app/instance/backup.db\\\"'); print('Backup created')\""
+ssh ubuntu@oci-mecws-prod01 "docker exec mecws-ops-web-1 python3 -c \"import sqlite3; con = sqlite3.connect('/app/instance/mecws.db'); con.execute('VACUUM INTO \\\"/app/instance/backup.db\\\"'); print('Backup created')\""
 
 # Download the backup to your local machine
-rsync -avzP ubuntu@oci-ashburn01:~/mecws-ops/instance/backup.db ./instance-backup-$(date +%F).db
+rsync -avzP ubuntu@oci-mecws-prod01:~/mecws-ops/instance/backup.db ./instance-backup-$(date +%F).db
 ```
 
 ### Capacity Retry Loop (`retry-apply.sh`)

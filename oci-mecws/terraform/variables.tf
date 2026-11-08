@@ -48,7 +48,7 @@ variable "instance_name" {
 
 variable "micro_instance_name" {
   type    = string
-  default = "oci-ashburn01"
+  default = "oci-mecws-prod01"
 }
 
 # Attach the public-ssh NSG (port 22 from ssh_allowed_cidr). Off = SSH only via Tailscale.
