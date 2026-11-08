@@ -1,4 +1,4 @@
-# oci-sbprivatecloud
+# oci-mecws
 
 Infrastructure as Code (Terraform) and operational documentation for the **sbpersonalcloud** Oracle Cloud Infrastructure (OCI) tenancy in home region `us-ashburn-1` (IAD).
 
@@ -153,7 +153,7 @@ docker run -d --name cloudflared --restart unless-stopped \
 ## Directory Layout
 
 ```text
-oci-sbprivatecloud/
+oci-mecws/
 ├── README.md                # This comprehensive documentation file
 ├── .gitignore               # Ignores creds/ and OS cache files
 ├── creds/                   # OCI API signing keys (DO NOT COMMIT)
@@ -185,7 +185,7 @@ oci-sbprivatecloud/
    fingerprint=80:02:c6:42:b2:1b:49:97:21:6b:18:8d:a9:e7:f1:d0
    tenancy=ocid1.tenancy.oc1..aaaaaaaabnq6zphstv3qlafbwf4nu3falzfezd5x76bueyanxhuagq37shna
    region=us-ashburn-1
-   key_file=/Users/stanbrinkerhoff/git/various-infrastructure/oci-sbprivatecloud/creds/stan@vtwireless.com-2026-11-03T11_55_24.757Z.pem
+   key_file=/Users/stanbrinkerhoff/git/various-infrastructure/oci-mecws/creds/stan@vtwireless.com-2026-11-03T11_55_24.757Z.pem
    ```
 
 3. **Verify Access**:

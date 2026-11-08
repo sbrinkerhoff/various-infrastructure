@@ -1,7 +1,7 @@
 resource "oci_identity_compartment" "this" {
   compartment_id = var.tenancy_ocid
   name           = "sbprivatecloud"
-  description    = "Managed by Terraform (oci-sbprivatecloud)"
+  description    = "Managed by Terraform (oci-mecws)"
   enable_delete  = true
 }
 
