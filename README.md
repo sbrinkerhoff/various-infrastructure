@@ -8,6 +8,11 @@ Monorepo for cloud infrastructure, automation scripts, and deployment configurat
 various-infrastructure/
 ├── .gitignore
 ├── README.md
+├── mplr-edge01/                 # Dell Edge 640 physical edge router & KVM hypervisor
+│   ├── README.md                # System specs, network architecture, and runbook
+│   └── config/
+│       ├── 01-netcfg.yaml       # Netplan host bridging (br-wan, br-lan)
+│       └── opnsense.xml         # Libvirt domain XML definition for OPNsense 24.7
 └── oci-mecws/                   # Oracle Cloud Infrastructure (OCI) environment
     ├── README.md                # In-depth architectural & operational guide
     ├── creds/                   # OCI API signing keys (git-ignored)
@@ -21,6 +26,22 @@ various-infrastructure/
 ```
 
 ## Projects & Environments
+
+### [mplr-edge01](file:///Users/stanbrinkerhoff/git/various-infrastructure/mplr-edge01/README.md)
+Dell EMC Virtual Edge Platform (VEP) 640 physical edge appliance hosting a virtualized OPNsense 24.7 firewall on Ubuntu 26.04 LTS via KVM / QEMU.
+
+- **Hardware**: Intel Atom C3758 (8 cores @ 2.20 GHz), 30 GB ECC RAM, 240 GB SSD.
+- **Network Interfaces**: 8 physical ports (4x 1GbE I350, 2x 1GbE X553, 2x 10GbE X553 SFP+).
+- **Hypervisor Bridging**: Netplan bridges `eno6` (uplink) + `ens2f1` into `br-lan` (Host: `192.168.40.104/24`), and `ens2f0` into `br-wan`.
+- **OPNsense Firewall VM**:
+  - `vtnet0` (WAN): Attached to `br-wan` (physical `ens2f0`).
+  - `vtnet1` (LAN): Attached to `br-lan` (`192.168.40.2/24`, Web UI HTTPS, DHCP disabled).
+  - UEFI OVMF firmware, 4 vCPUs, 8 GB RAM, VirtIO disk and networking.
+- **Configuration & XML**:
+  - [`mplr-edge01/config/01-netcfg.yaml`](file:///Users/stanbrinkerhoff/git/various-infrastructure/mplr-edge01/config/01-netcfg.yaml)
+  - [`mplr-edge01/config/opnsense.xml`](file:///Users/stanbrinkerhoff/git/various-infrastructure/mplr-edge01/config/opnsense.xml)
+
+Refer to [`mplr-edge01/README.md`](file:///Users/stanbrinkerhoff/git/various-infrastructure/mplr-edge01/README.md) for full architecture diagrams, tuning guides (VirtIO offload), and operational runbooks.
 
 ### [oci-mecws](file:///Users/stanbrinkerhoff/git/various-infrastructure/oci-mecws/README.md)
 Contains the Infrastructure as Code (Terraform) and operational runbooks for the **sbpersonalcloud** Oracle Cloud tenancy in `us-ashburn-1` (IAD).

@@ -1,0 +1,70 @@
+# Netplan configuration for Dell Edge 640 (mplr-edge01)
+# Bridges physical ports into KVM bridges for OPNsense WAN and LAN.
+
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    # Management uplink to local network (192.168.40.0/24)
+    eno6:
+      dhcp4: false
+      dhcp6: false
+
+    # Physical GbE WAN port
+    ens2f0:
+      dhcp4: false
+      dhcp6: false
+
+    # Physical GbE LAN expansion port
+    ens2f1:
+      dhcp4: false
+      dhcp6: false
+
+    # Additional onboard & PCIe interfaces (marked optional)
+    eno5:
+      dhcp4: false
+      dhcp6: false
+      optional: true
+    eno7:
+      dhcp4: false
+      dhcp6: false
+      optional: true
+    eno8:
+      dhcp4: false
+      dhcp6: false
+      optional: true
+    ens2f2:
+      dhcp4: false
+      dhcp6: false
+      optional: true
+    ens2f3:
+      dhcp4: false
+      dhcp6: false
+      optional: true
+
+  bridges:
+    # WAN bridge connecting ens2f0 to OPNsense vtnet0
+    br-wan:
+      interfaces: [ens2f0]
+      dhcp4: false
+      dhcp6: false
+      parameters:
+        stp: false
+        forward-delay: 0
+
+    # LAN bridge connecting eno6, ens2f1, host IP, and OPNsense vtnet1
+    br-lan:
+      interfaces: [eno6, ens2f1]
+      macaddress: e8:b2:65:9b:95:7e
+      dhcp4: false
+      dhcp6: false
+      addresses:
+        - 192.168.40.104/24
+      routes:
+        - to: default
+          via: 192.168.40.1
+      nameservers:
+        addresses: [192.168.40.1, 1.1.1.1]
+      parameters:
+        stp: false
+        forward-delay: 0
