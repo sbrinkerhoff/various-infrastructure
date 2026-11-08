@@ -1,0 +1,6 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+retry-apply.log
+!instance.auto.tfvars

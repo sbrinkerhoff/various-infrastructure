@@ -1,0 +1,19 @@
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Credentials & Secrets
+**/creds/
+*.pem
+*.key
+
+# Terraform State and Caches
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!instance.auto.tfvars
+tfplan
+
+# Logs
+*.log
