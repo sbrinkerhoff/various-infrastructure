@@ -106,7 +106,7 @@ The Libvirt domain XML is versioned at [`config/opnsense.xml`](file:///Users/sta
 | **Memory** | 8192 MiB (8 GB) |
 | **Disk** | 40 GB QCOW2 (`/var/lib/libvirt/images/opnsense.qcow2`) via `virtio` bus |
 | **Network Interfaces** | `vtnet0` on `br-wan` (virtio)<br/>`vtnet1` on `br-lan` (virtio) |
-| **Graphics / Display** | VNC on `0.0.0.0:5900` (password: `opnsense`), Bochs VGA |
+| **Graphics / Display** | VNC on `0.0.0.0:5900` (password set in the libvirt domain, not in this repo), Bochs VGA |
 | **Serial / Console** | Serial PTY (`ttyS0`), accessible via `virsh console` |
 | **Boot Behavior** | Autostarts on host boot (`virsh autostart opnsense`) |
 
@@ -119,10 +119,8 @@ The Libvirt domain XML is versioned at [`config/opnsense.xml`](file:///Users/sta
 * **Upstream Gateway**: None (acts as peer/secondary router during staged transition)
 * **DHCP Server**: **Disabled** (prevents conflicts with existing router `192.168.40.1`)
 * **Web UI**: [https://192.168.40.2/](https://192.168.40.2/)
-* **Default Credentials**:
-  * Username: `root`
-  * Password: `opnsense`
-* **VNC Remote Access**: `vnc://192.168.40.104:5900` (macOS Screen Sharing compatible, password: `opnsense`)
+* **Admin Login**: `root` (password kept out of this repo; change it from the factory default)
+* **VNC Remote Access**: `vnc://192.168.40.104:5900` (macOS Screen Sharing compatible; password kept out of this repo)
 
 ### Host System
 * **Hostname**: `mplr-edge01`
@@ -172,7 +170,7 @@ virsh autostart opnsense
   ```bash
   open vnc://192.168.40.104:5900
   ```
-  *(Enter password `opnsense` when prompted)*
+  *(Enter the VNC password when prompted; it is kept out of this repo)*
 
 * **Text Serial Console**:
   ```bash
