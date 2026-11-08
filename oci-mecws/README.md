@@ -17,31 +17,31 @@ The system employs a **Zero-Trust network architecture**:
 ```mermaid
 flowchart TD
     subgraph PublicInternet["Public Internet"]
-        Volunteer["Volunteers & Admins<br/>(Browsers / Mobile)"]
+        Volunteer["Volunteers and Admins (Browsers / Mobile)"]
     end
 
     subgraph Tailnet["Tailscale Mesh Network (100.x.x.x)"]
-        MacBook["Stan's MacBook<br/>(100.127.69.114)"]
-        iPhone["iPhone<br/>(100.110.140.76)"]
+        MacBook["Stan's MacBook (100.127.69.114)"]
+        iPhone["iPhone (100.110.140.76)"]
     end
 
     subgraph Cloudflare["Cloudflare Edge Network"]
-        CFEdge["Cloudflare Edge Proxy<br/>ops.mecws.org<br/>(DDoS Protection, WAF, SSL)"]
-        CFTunnel["Cloudflare Tunnel<br/>oci-ashburn01<br/>(ID: 267777ad-...)"]
+        CFEdge["Cloudflare Edge Proxy (ops.mecws.org)"]
+        CFTunnel["Cloudflare Tunnel (oci-ashburn01)"]
     end
 
     subgraph OCI["Oracle Cloud Infrastructure (us-ashburn-1)"]
         subgraph VCN["sbcloud-vcn (10.0.0.0/16) - Zero Inbound Open Ports"]
             subgraph VM["oci-ashburn01 (VM.Standard.E2.1.Micro)"]
-                TSDaemon["Tailscale Daemon<br/>(100.77.132.0)<br/>Exit Node Advertised"]
-                SSHService["Host SSH Daemon<br/>(Port 22 on Tailscale only)"]
+                TSDaemon["Tailscale Daemon (100.77.132.0 - Exit Node)"]
+                SSHService["Host SSH Daemon (Port 22 on Tailscale only)"]
                 
                 subgraph DockerEngine["Docker Engine"]
-                    CFTunContainer["cloudflared Container<br/>(Outbound Tunnel Session)"]
-                    AppContainer["mecws-ops-web-1 Container<br/>(Flask / Gunicorn on :5000)"]
+                    CFTunContainer["cloudflared Container (Outbound Tunnel)"]
+                    AppContainer["mecws-ops-web-1 Container (Flask / Gunicorn on :5000)"]
                 end
                 
-                SQLiteDB[("instance/mecws.db<br/>(SQLite with WAL Mode)")]
+                SQLiteDB[("instance/mecws.db (SQLite with WAL Mode)")]
             end
         end
     end
@@ -49,7 +49,7 @@ flowchart TD
     %% Public Traffic Flow
     Volunteer -->|"HTTPS (443)"| CFEdge
     CFEdge --> CFTunnel
-    CFTunnel <==|"Outbound Encrypted Tunnel"| CFTunContainer
+    CFTunnel <-->|"Encrypted Tunnel Session"| CFTunContainer
     CFTunContainer -->|"http://localhost:5000"| AppContainer
     AppContainer -->|"Reads / Writes"| SQLiteDB
 
